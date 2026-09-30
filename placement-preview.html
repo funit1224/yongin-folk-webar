@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>민속촌 AR 배치 미리보기</title>
+  </head>
+  <body>
+    <main class="preview-shell">
+      <aside class="preview-panel">
+        <p class="eyebrow">Placement Preview</p>
+        <h1>배치 미리보기</h1>
+        <label>
+          <span>장면</span>
+          <select id="preview-scene-select"></select>
+        </label>
+        <p id="preview-status">모델을 불러오는 중입니다.</p>
+      </aside>
+      <div id="preview-stage"></div>
+    </main>
+    <script type="module" src="/src/placement-preview.js"></script>
+  </body>
+</html>
