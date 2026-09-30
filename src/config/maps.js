@@ -17,7 +17,7 @@ export const MAPS = {
 };
 
 export const DEFAULT_SCENE =
-  import.meta.env.VITE_DEFAULT_SCENE || "Test01";
+  import.meta.env.VITE_DEFAULT_SCENE || "Test03";
 
 export function getMapByScene(sceneId) {
   return MAPS[sceneId] || MAPS[DEFAULT_SCENE] || Object.values(MAPS)[0];

@@ -70,6 +70,7 @@ async function setup(sceneId) {
 
   cleanup();
   scene3d = createScene3D(document.body);
+  scene3d.root.position.fromArray(sceneConfig.placementOffset || [0, 0, 0]);
 
   try {
     validateMapConfig(mapConfig);
