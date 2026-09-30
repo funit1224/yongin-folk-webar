@@ -14,6 +14,22 @@
           <span>장면</span>
           <select id="preview-scene-select"></select>
         </label>
+        <section class="control-panel" aria-label="전체 배치 조정">
+          <h2>전체 이동</h2>
+          <label>
+            <span>X 좌우</span>
+            <input id="offset-x" type="number" step="0.1" value="0" />
+          </label>
+          <label>
+            <span>Y 높이</span>
+            <input id="offset-y" type="number" step="0.05" value="0" />
+          </label>
+          <label>
+            <span>Z 앞뒤</span>
+            <input id="offset-z" type="number" step="0.1" value="0" />
+          </label>
+          <pre id="offset-output">placementOffset: [0, 0, 0]</pre>
+        </section>
         <p id="preview-status">모델을 불러오는 중입니다.</p>
       </aside>
       <div id="preview-stage"></div>
