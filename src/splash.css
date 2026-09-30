@@ -1,0 +1,133 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #f7f3eb;
+}
+
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.splash-shell {
+  display: grid;
+  place-items: center;
+  width: 100vw;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+  padding: 0;
+  background: #f7f3eb;
+}
+
+.splash-frame {
+  position: relative;
+  display: block;
+  width: max(100vw, calc(100dvh * 360 / 640));
+  height: max(100dvh, calc(100vw * 640 / 360));
+  aspect-ratio: 360 / 640;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  background: #d8c29b;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.splash-frame img {
+  position: absolute;
+  display: block;
+  user-select: none;
+  pointer-events: none;
+}
+
+.splash-bg {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+}
+
+.title-logo {
+  top: 9.5%;
+  left: 50%;
+  width: 83.33%;
+  transform: translateX(-50%);
+  z-index: 4;
+}
+
+.character {
+  left: 50%;
+  bottom: 0;
+  width: 94.44%;
+  transform: translateX(-50%);
+  z-index: 2;
+}
+
+.splash-gradient {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      to bottom,
+      #9c9c9c 0%,
+      rgba(247, 201, 138, 0) 16.72%,
+      rgba(247, 201, 138, 0) 100%
+    ),
+    linear-gradient(
+      to top,
+      #2b1108 0%,
+      rgba(247, 201, 138, 0) 20%,
+      rgba(247, 201, 138, 0) 100%
+    );
+  z-index: 3;
+}
+
+.touch-button {
+  left: 50%;
+  bottom: 12.5%;
+  width: 65.56%;
+  transform: translateX(-50%);
+  animation: pulse-touch 1.2s ease-in-out infinite;
+  z-index: 4;
+}
+
+.folk-village-logo {
+  left: 50%;
+  bottom: 7.1%;
+  width: 30.28%;
+  transform: translateX(-50%);
+  z-index: 4;
+}
+
+.partner-logos {
+  left: 50%;
+  bottom: 3.2%;
+  width: 71.39%;
+  transform: translateX(-50%);
+  z-index: 4;
+}
+
+@keyframes pulse-touch {
+  0%,
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+
+  50% {
+    opacity: 0.78;
+    transform: translateX(-50%) scale(1.025);
+  }
+}
+
