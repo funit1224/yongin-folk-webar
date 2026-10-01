@@ -1,9 +1,15 @@
 const MODEL_BASE = "/assets/models/glb";
+// 9개 전시물을 배치할 원의 중심 좌표입니다. [x 좌우, y 높이, z 앞뒤]
 const PLACEMENT_CENTER = [-1.2, -1.05, -9.35];
+// 9개 전시물 사이 간격을 조절하는 원 반경입니다.
 const PLACEMENT_RADIUS = 3.5;
+// 각 에셋에 공통으로 적용되는 기본 렌더링 설정입니다.
 const DEFAULT_ASSET_SETTINGS = {
+  // 1이면 GLB 원본 크기 그대로 사용합니다.
   scale: 1,
+  // false면 GLB 제공자가 만든 원본 재질과 조명 반응을 유지합니다.
   unlit: false,
+  // true면 GLB 내부 애니메이션이 있을 때 자동 재생합니다.
   playAnimation: true,
 };
 

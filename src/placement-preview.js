@@ -12,6 +12,7 @@ import {
   loadSceneAssets,
   updateSceneAssets,
 } from "./content/glb-content.js";
+import { addSceneLighting } from "./core/lighting.js";
 
 const select = document.querySelector(
   "#preview-scene-select",
@@ -119,20 +120,7 @@ function init() {
   );
   scene.add(grid);
   scene.add(new THREE.AxesHelper(1.2));
-  scene.add(
-    new THREE.HemisphereLight(
-      0xffffff,
-      0x334155,
-      2,
-    ),
-  );
-
-  const light = new THREE.DirectionalLight(
-    0xffffff,
-    2,
-  );
-  light.position.set(2, 4, 3);
-  scene.add(light);
+  addSceneLighting(scene);
 
   window.addEventListener("resize", resize);
   renderer.setAnimationLoop(render);

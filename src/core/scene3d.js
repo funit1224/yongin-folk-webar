@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { addSceneLighting } from "./lighting.js";
 
 export function createScene3D(
   container = document.body,
@@ -32,19 +33,8 @@ export function createScene3D(
   root.visible = false;
   scene.add(root);
 
-  // GLB가 너무 어둡게 보이지 않도록 기본 조명을 둡니다.
-  scene.add(
-    new THREE.HemisphereLight(
-      0xffffff,
-      0x334155,
-      2,
-    ),
-  );
-
-  const directionalLight =
-    new THREE.DirectionalLight(0xffffff, 2.2);
-  directionalLight.position.set(0.5, 1, 0.35);
-  scene.add(directionalLight);
+  // GLB가 너무 어둡게 보이지 않도록 공통 조명을 둡니다.
+  addSceneLighting(scene);
 
   const onResize = () => {
     camera.aspect =

@@ -5,19 +5,31 @@ import {
   loadSceneAssets,
   updateSceneAssets,
 } from "./content/glb-content.js";
+import { addSceneLighting } from "./core/lighting.js";
 import "./preview.css";
 
-const stage = document.querySelector("#asset-stage");
-const select = document.querySelector("#asset-select");
-const status = document.querySelector("#asset-status");
+const stage = document.querySelector(
+  "#asset-stage",
+);
+const select = document.querySelector(
+  "#asset-select",
+);
+const status = document.querySelector(
+  "#asset-status",
+);
 const assets = SCENES.Test03.assets;
 
 const renderer = new THREE.WebGLRenderer({
   antialias: true,
   alpha: true,
 });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-renderer.setSize(stage.clientWidth, stage.clientHeight);
+renderer.setPixelRatio(
+  Math.min(window.devicePixelRatio, 1.5),
+);
+renderer.setSize(
+  stage.clientWidth,
+  stage.clientHeight,
+);
 renderer.setClearColor(0xf7f4ef, 1);
 stage.appendChild(renderer.domElement);
 
@@ -30,16 +42,20 @@ const camera = new THREE.PerspectiveCamera(
 );
 camera.position.set(0, 1.5, 5);
 
-const controls = new OrbitControls(camera, renderer.domElement);
+const controls = new OrbitControls(
+  camera,
+  renderer.domElement,
+);
 controls.enableDamping = true;
 
-scene.add(new THREE.HemisphereLight(0xffffff, 0x334155, 2));
+addSceneLighting(scene);
 
-const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
-directionalLight.position.set(2, 4, 3);
-scene.add(directionalLight);
-
-const grid = new THREE.GridHelper(8, 16, 0x94a3b8, 0xd6d3d1);
+const grid = new THREE.GridHelper(
+  8,
+  16,
+  0x94a3b8,
+  0xd6d3d1,
+);
 scene.add(grid);
 scene.add(new THREE.AxesHelper(1.8));
 
@@ -61,7 +77,9 @@ select.addEventListener("change", () => {
   void loadAsset(Number(select.value));
 });
 
-for (const button of document.querySelectorAll("[data-view]")) {
+for (const button of document.querySelectorAll(
+  "[data-view]",
+)) {
   button.addEventListener("click", () => {
     setCameraView(button.dataset.view);
   });
@@ -70,9 +88,13 @@ for (const button of document.querySelectorAll("[data-view]")) {
 window.addEventListener("resize", resize);
 
 function resize() {
-  camera.aspect = stage.clientWidth / stage.clientHeight;
+  camera.aspect =
+    stage.clientWidth / stage.clientHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(stage.clientWidth, stage.clientHeight);
+  renderer.setSize(
+    stage.clientWidth,
+    stage.clientHeight,
+  );
 }
 
 async function loadAsset(index) {
@@ -80,15 +102,18 @@ async function loadAsset(index) {
   status.textContent = `${asset.name} 원본 방향을 불러오는 중입니다.`;
 
   try {
-    activeAnchors = await loadSceneAssets(modelRoot, [
-      {
-        ...asset,
-        position: [0, 0, 0],
-        rotation: [0, 0, 0],
-        scale: 1,
-        unlit: true,
-      },
-    ]);
+    activeAnchors = await loadSceneAssets(
+      modelRoot,
+      [
+        {
+          ...asset,
+          position: [0, 0, 0],
+          rotation: [0, 0, 0],
+          scale: 1,
+          unlit: true,
+        },
+      ],
+    );
 
     const model = activeAnchors[0].object;
     frameModel(model);
@@ -100,13 +125,22 @@ async function loadAsset(index) {
 
 function frameModel(model) {
   model.updateMatrixWorld(true);
-  const box = new THREE.Box3().setFromObject(model);
-  const center = box.getCenter(new THREE.Vector3());
+  const box = new THREE.Box3().setFromObject(
+    model,
+  );
+  const center = box.getCenter(
+    new THREE.Vector3(),
+  );
   const size = box.getSize(new THREE.Vector3());
-  const distance = Math.max(size.x, size.y, size.z) * 2.2 || 4;
+  const distance =
+    Math.max(size.x, size.y, size.z) * 2.2 || 4;
 
   controls.target.copy(center);
-  camera.position.set(center.x, center.y + size.y * 0.4, center.z + distance);
+  camera.position.set(
+    center.x,
+    center.y + size.y * 0.4,
+    center.z + distance,
+  );
   camera.near = Math.max(distance / 100, 0.01);
   camera.far = distance * 20;
   camera.updateProjectionMatrix();
@@ -114,10 +148,15 @@ function frameModel(model) {
 }
 
 function setCameraView(view) {
-  const box = new THREE.Box3().setFromObject(modelRoot);
-  const center = box.getCenter(new THREE.Vector3());
+  const box = new THREE.Box3().setFromObject(
+    modelRoot,
+  );
+  const center = box.getCenter(
+    new THREE.Vector3(),
+  );
   const size = box.getSize(new THREE.Vector3());
-  const distance = Math.max(size.x, size.y, size.z) * 2.4 || 4;
+  const distance =
+    Math.max(size.x, size.y, size.z) * 2.4 || 4;
   const y = center.y + size.y * 0.35;
 
   const positions = {
