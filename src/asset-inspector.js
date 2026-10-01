@@ -5,7 +5,10 @@ import {
   loadSceneAssets,
   updateSceneAssets,
 } from "./content/glb-content.js";
-import { addSceneLighting } from "./core/lighting.js";
+import {
+  addSceneLighting,
+  addTargetAssetLighting,
+} from "./core/lighting.js";
 import "./preview.css";
 
 const stage = document.querySelector(
@@ -113,6 +116,10 @@ async function loadAsset(index) {
           unlit: true,
         },
       ],
+    );
+    addTargetAssetLighting(
+      modelRoot,
+      activeAnchors,
     );
 
     const model = activeAnchors[0].object;

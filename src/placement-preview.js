@@ -12,7 +12,10 @@ import {
   loadSceneAssets,
   updateSceneAssets,
 } from "./content/glb-content.js";
-import { addSceneLighting } from "./core/lighting.js";
+import {
+  addSceneLighting,
+  addTargetAssetLighting,
+} from "./core/lighting.js";
 
 const select = document.querySelector(
   "#preview-scene-select",
@@ -145,6 +148,7 @@ async function loadPreview(sceneId) {
       root,
       sceneConfig.assets,
     );
+    addTargetAssetLighting(root, anchors);
     if (runId !== previewRun) return;
     root.visible = true;
     status.textContent = `${sceneConfig.label} 모델 표시 완료. 공간 mesh를 불러오는 중입니다.`;
