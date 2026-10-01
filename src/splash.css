@@ -19,6 +19,8 @@ body {
 
 .splash-shell {
   /* 360x640 디자인을 화면 전체 cover 방식으로 보여주는 바깥 영역입니다. */
+  position: relative;
+  z-index: 20;
   display: grid;
   place-items: center;
   width: 100vw;

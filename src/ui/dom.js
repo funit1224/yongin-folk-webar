@@ -26,6 +26,7 @@ export function populateSceneSelect(select, scenes, selectedId) {
 export function setStatus(elements, state, title, detail = "") {
   // 상태 카드의 색상과 메시지를 함께 갱신합니다.
   elements.statusCard.className = `status-card status-${state}`;
+  elements.overlay.dataset.status = state;
   elements.statusTitle.textContent = title;
   elements.statusDetail.textContent = detail;
 }

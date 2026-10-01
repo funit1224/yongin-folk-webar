@@ -21,6 +21,8 @@ export async function createMultisetAR({
   onStatus,
   onFrame,
   onLocalized,
+  onLocalizationFailure,
+  onError,
 }) {
   // 선택된 Map Code로 위치 인식 대상 지도를 지정합니다.
   const client = new MultisetClient({
@@ -36,7 +38,7 @@ export async function createMultisetAR({
   const session = new XRSessionManager(renderer.getContext(), {
     client,
     overlayRoot,
-    autoLocalize: true,
+    autoLocalize: false,
     relocalization: false,
     backgroundLocalization: false,
     confidenceCheck: true,
@@ -44,24 +46,22 @@ export async function createMultisetAR({
     poseTimeoutMs: 15000,
     framebufferScaleFactor: 1,
     onSessionStart: () => {
-      onStatus("running", "위치 인식 중", "스캔된 장소를 천천히 비춰주세요.");
+      onStatus("running", "주변을 천천히 비춰주세요", "휴대폰을 좌우로 천천히 움직여\n전시 안내판과 주변을 함께 담아주세요.");
     },
-    onSessionEnd: () => {
-      onStatus("ready", "준비 완료", "다시 시작할 수 있습니다.");
-    },
+    onSessionEnd: () => {},
     onLocalizationResult: (result) => {
       const confidence = result?.localizeData?.confidence;
       const detail =
         typeof confidence === "number"
           ? `위치 인식 성공. 신뢰도 ${(confidence * 100).toFixed(0)}%.`
           : "위치 인식 성공.";
-      onStatus("success", "위치 인식 성공", detail);
+      onStatus("success", "공간 스캔 완료", detail);
     },
     onLocalizationFailure: (reason) => {
-      onStatus("running", "위치 인식 재시도 중", formatError(reason));
+      onLocalizationFailure?.(reason);
     },
     onError: (error) => {
-      onStatus("error", "Multiset 오류", formatError(error));
+      onError?.(error);
     },
   });
 
@@ -92,8 +92,17 @@ export async function createMultisetAR({
     getMapGroup() {
       return adapter?.world?.meshVisualizer?.getMeshGroup?.();
     },
+    connectMapSpace(mapSpace) {
+      mapSpace.connect(adapter);
+    },
     start() {
       return adapter.startSession();
+    },
+    isActive() {
+      return adapter.isActive?.() ?? session.isActive?.() ?? false;
+    },
+    localizeFrame() {
+      return adapter.localizeFrame();
     },
     stop() {
       adapter.stopSession();
@@ -110,7 +119,7 @@ function hideSdkDebugChildren(adapter, contentRoot) {
   if (!mapGroup) return;
 
   for (const child of mapGroup.children) {
-    if (child !== contentRoot) {
+    if (child !== contentRoot && child !== contentRoot.parent) {
       child.visible = false;
     }
   }

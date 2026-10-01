@@ -9,8 +9,8 @@ body {
   margin: 0;
   overflow: hidden;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: #111827;
-  background: #0f172a;
+  color: #fff;
+  background: #111;
 }
 
 canvas {
@@ -20,133 +20,250 @@ canvas {
 }
 
 .overlay {
-  /* WebXR canvas 위에 상태/버튼 UI를 얹습니다. */
-  pointer-events: none;
+  pointer-events: auto;
   position: fixed;
   inset: 0;
   z-index: 10;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: max(16px, env(safe-area-inset-top)) 16px max(18px, env(safe-area-inset-bottom));
+  display: block;
+  padding:
+    max(10px, env(safe-area-inset-top))
+    12px
+    max(16px, env(safe-area-inset-bottom));
 }
 
-.top-panel,
+.scan-guide,
 .status-card,
 .actions {
   pointer-events: auto;
 }
 
-.top-panel {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.2);
+.scan-guide {
+  position: fixed;
+  left: 50%;
+  top: 34%;
+  width: min(76vw, 300px);
+  aspect-ratio: 1.55;
+  transform: translate(-50%, -50%);
 }
 
-.eyebrow {
-  margin: 0 0 4px;
-  color: #7c2d12;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0;
+.scan-grid {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 100%;
+  transform: translateX(-50%);
+  opacity: 0.74;
 }
 
-h1 {
-  margin: 0;
-  font-size: 22px;
-  line-height: 1.2;
+.scan-phone-wrap {
+  position: absolute;
+  left: 50%;
+  bottom: 32%;
+  width: 21%;
+  transform: translateX(-50%);
 }
 
-.scene-picker {
-  display: grid;
-  gap: 6px;
-  min-width: 116px;
-  font-size: 12px;
-  font-weight: 700;
+.scan-phone {
+  display: block;
+  width: 100%;
+  filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.28));
 }
 
-select,
-button {
-  min-height: 42px;
-  border: 1px solid #d6d3d1;
-  border-radius: 8px;
-  font: inherit;
+.scan-line {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  width: 88%;
+  transform: translate(-50%, -50%);
+  animation: scan-line-move 2.2s ease-in-out infinite;
 }
 
-select {
-  padding: 0 10px;
-  background: #fff;
+@keyframes scan-line-move {
+  0%,
+  100% {
+    top: 38%;
+    opacity: 0.8;
+  }
+
+  50% {
+    top: 64%;
+    opacity: 1;
+  }
 }
 
 .status-card {
-  /* Multiset 인증, 위치 인식, 오류 상태를 사용자에게 보여줍니다. */
-  margin: auto 0 14px;
-  padding: 14px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.93);
-  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.2);
+  position: fixed;
+  left: 50%;
+  top: 61%;
+  width: min(86vw, 340px);
+  min-height: 164px;
+  margin: 0;
+  padding: 18px 17px 17px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(76, 67, 55, 0.82), rgba(51, 45, 38, 0.78));
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(8px);
+  transform: translate(-50%, -50%);
+}
+
+.status-kicker {
+  margin: 0 0 7px;
+  color: #00d7df;
+  font-size: 12px;
+  font-weight: 900;
 }
 
 .status-card strong {
   display: block;
-  margin-bottom: 4px;
-  font-size: 17px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  font-size: clamp(20px, 5.4vw, 28px);
+  font-weight: 900;
+  line-height: 1.18;
 }
 
 .status-card p {
   margin: 0;
-  color: #475569;
-  font-size: 14px;
-  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: clamp(12px, 3.1vw, 15px);
+  font-weight: 600;
+  line-height: 1.55;
+  white-space: pre-line;
 }
 
-.status-error {
-  border-left: 5px solid #dc2626;
+.scan-progress {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 22px;
 }
 
-.status-success {
-  border-left: 5px solid #16a34a;
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.38);
 }
 
-.status-running,
-.status-pending,
-.status-ready {
-  border-left: 5px solid #b45309;
+.dot-active {
+  width: 8px;
+  height: 8px;
+  background: #19e0f0;
+  box-shadow: 0 0 12px rgba(25, 224, 240, 0.85);
+  animation: progress-pulse 1.05s ease-in-out infinite;
+}
+
+.dot:nth-child(2) {
+  animation: progress-pulse 1.05s ease-in-out 0.18s infinite;
+}
+
+.dot:nth-child(3) {
+  animation: progress-pulse 1.05s ease-in-out 0.36s infinite;
+}
+
+@keyframes progress-pulse {
+  0%,
+  100% {
+    opacity: 0.38;
+    transform: scale(1);
+  }
+
+  45% {
+    opacity: 1;
+    transform: scale(1.35);
+    background: #19e0f0;
+    box-shadow: 0 0 12px rgba(25, 224, 240, 0.85);
+  }
+}
+
+.scan-progress small {
+  color: rgba(255, 255, 255, 0.64);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.status-error .status-kicker {
+  color: #ffb4a8;
+}
+
+.status-success .status-kicker {
+  color: #67f4d8;
+}
+
+.overlay[data-status="success"] .scan-guide,
+.overlay[data-status="success"] .status-card,
+.overlay.is-localized .scan-guide,
+.overlay.is-localized .status-card {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
 }
 
 .actions {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 10px;
+  display: none;
 }
 
-button {
-  padding: 0 18px;
-  color: #fff;
-  background: #7c2d12;
-  border-color: #7c2d12;
-  font-weight: 800;
+.overlay[data-status="retry"] .actions {
+  position: fixed;
+  left: 50%;
+  top: calc(61% + 112px);
+  display: flex;
+  width: min(86vw, 340px);
+  margin: 0;
+  transform: translateX(-50%);
 }
 
-button:disabled {
-  color: #78716c;
-  background: #e7e5e4;
-  border-color: #d6d3d1;
+.overlay[data-status="retry"] #stop-ar {
+  display: none;
+}
+
+.actions button {
+  min-height: 48px;
+  border: 0;
+  border-radius: 10px;
+  color: #083344;
+  background:
+    linear-gradient(90deg, rgba(18, 213, 215, 0.96), rgba(16, 132, 255, 0.96)),
+    url("/assets/webar/but_1.png") center / 100% 100%;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+#start-ar {
+  flex: 1;
 }
 
 #stop-ar {
-  background: #292524;
-  border-color: #292524;
+  flex: 0 0 72px;
+  color: rgba(255, 255, 255, 0.82);
+  background: rgba(12, 17, 19, 0.62);
 }
 
-#stop-ar:disabled {
-  color: #78716c;
-  background: #e7e5e4;
-  border-color: #d6d3d1;
+.actions button:disabled {
+  cursor: default;
+  opacity: 0.48;
+}
+
+@media (min-aspect-ratio: 3 / 4) {
+  .overlay {
+    width: min(430px, 100vw);
+    margin: 0 auto;
+  }
+}
+
+@media (max-height: 620px) {
+  .scan-guide {
+    top: 31%;
+    width: min(60vw, 220px);
+  }
+
+  .status-card {
+    top: 62%;
+    padding: 16px;
+  }
 }
 

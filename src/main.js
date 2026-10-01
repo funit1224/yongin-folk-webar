@@ -3,11 +3,14 @@ import { getMapByScene, DEFAULT_SCENE, validateMapConfig } from "./config/maps.j
 import { getScene, listScenes } from "./config/scenes.js";
 import { loadSceneAssets, updateSceneAssets } from "./content/glb-content.js";
 import { createMultisetAR, isMultisetWebARSupported } from "./core/multiset-ar.js";
+import { addTargetAssetLighting } from "./core/lighting.js";
 import { createScene3D } from "./core/scene3d.js";
 import { formatError, getDom, populateSceneSelect, setStatus } from "./ui/dom.js";
 
 const clientId = import.meta.env.VITE_MULTISET_CLIENT_ID;
 const clientSecret = import.meta.env.VITE_MULTISET_CLIENT_SECRET;
+const shouldAutoBootWebAR =
+  document.body.dataset.autoBootWebar === "true";
 
 const elements = getDom();
 let currentSceneId = new URLSearchParams(location.search).get("scene") || DEFAULT_SCENE;
@@ -15,6 +18,12 @@ let scene3d;
 let multisetAR;
 let anchors = [];
 let setupRun = 0;
+let autoStartTried = false;
+let waitingForUserStart = false;
+let arSessionStarted = false;
+let retryAvailable = false;
+let initialized = false;
+let pendingStart = false;
 
 // URL의 scene 파라미터 또는 기본 scene을 기준으로 드롭다운을 초기화합니다.
 populateSceneSelect(elements.sceneSelect, listScenes(), currentSceneId);
@@ -25,17 +34,18 @@ elements.sceneSelect.addEventListener("change", () => {
 });
 
 elements.startButton.addEventListener("click", () => {
-  if (!multisetAR) return;
+  if (retryAvailable && arSessionStarted) {
+    void retryLocalization();
+    return;
+  }
 
-  elements.startButton.disabled = true;
-  elements.stopButton.disabled = false;
-  setStatus(elements, "running", "AR 세션 시작 중", "카메라 권한을 허용해주세요.");
+  void startARSession();
+});
 
-  multisetAR.start().catch((error) => {
-    setStatus(elements, "error", "AR 시작 실패", formatError(error));
-    elements.startButton.disabled = false;
-    elements.stopButton.disabled = true;
-  });
+elements.overlay.addEventListener("click", () => {
+  if (!waitingForUserStart) return;
+  waitingForUserStart = false;
+  void startARSession();
 });
 
 elements.stopButton.addEventListener("click", () => {
@@ -43,9 +53,14 @@ elements.stopButton.addEventListener("click", () => {
   elements.stopButton.disabled = true;
 });
 
-void boot();
+if (document.body.dataset.autoBootWebar === "true") {
+  void initializeWebARApp();
+}
 
-async function boot() {
+export async function initializeWebARApp() {
+  if (initialized) return;
+  initialized = true;
+
   // Multiset 인증 정보가 없으면 WebAR 초기화를 진행하지 않습니다.
   if (!clientId || !clientSecret) {
     setStatus(elements, "error", "환경변수 필요", ".env에 Multiset Client ID와 Secret을 입력해주세요.");
@@ -62,6 +77,14 @@ async function boot() {
   await setup(currentSceneId);
 }
 
+export function requestARStart() {
+  pendingStart = true;
+  waitingForUserStart = true;
+  if (multisetAR) {
+    void startARSession({ fallbackToButton: true });
+  }
+}
+
 async function setup(sceneId) {
   const runId = ++setupRun;
   const sceneConfig = getScene(sceneId);
@@ -69,7 +92,8 @@ async function setup(sceneId) {
 
   elements.startButton.disabled = true;
   elements.stopButton.disabled = true;
-  setStatus(elements, "pending", "준비 중", `${mapConfig.label} 공간을 준비하고 있습니다.`);
+  setStatus(elements, "pending", "공간 스캔을 준비하고 있어요", `${mapConfig.label} 공간 데이터를 불러오는 중입니다.`);
+  elements.overlay.classList.remove("is-localized");
 
   cleanup();
   scene3d = createScene3D(document.body);
@@ -79,6 +103,7 @@ async function setup(sceneId) {
   try {
     validateMapConfig(mapConfig);
     anchors = await loadSceneAssets(scene3d.root, sceneConfig.assets);
+    addTargetAssetLighting(scene3d.root, anchors);
     if (runId !== setupRun) return;
 
     multisetAR = await createMultisetAR({
@@ -94,28 +119,117 @@ async function setup(sceneId) {
       onFrame: (deltaSeconds) => updateSceneAssets(anchors, deltaSeconds),
       onLocalized: () => {
         // 위치 인식 성공 후에만 콘텐츠 root를 표시합니다.
-        attachContentToMapGroup();
         scene3d.root.visible = true;
+        elements.overlay.classList.add("is-localized");
         setStatus(elements, "success", "AR 콘텐츠 표시 중", "");
+      },
+      onLocalizationFailure: (reason) => {
+        showRetryStatus(reason);
+      },
+      onError: (error) => {
+        if (isRecoverableLocalizationError(error)) {
+          showRetryStatus(error);
+          return;
+        }
+
+        setStatus(elements, "error", "Multiset 오류", formatError(error));
       },
     });
 
     if (runId !== setupRun) return;
-    attachContentToMapGroup();
-    setStatus(elements, "ready", "준비 완료", `${mapConfig.label} 공간으로 AR을 시작할 수 있습니다.`);
+    multisetAR.connectMapSpace(scene3d.mapSpace);
+    setStatus(elements, "ready", "주변을 천천히 비춰주세요", "휴대폰을 좌우로 천천히 움직여\n전시 안내판과 주변을 함께 담아주세요.");
     elements.startButton.disabled = false;
+    waitingForUserStart = true;
+    if (
+      pendingStart ||
+      (shouldAutoBootWebAR && !autoStartTried)
+    ) {
+      pendingStart = false;
+      autoStartTried = true;
+      void startARSession({ fallbackToButton: true });
+    }
   } catch (error) {
     setStatus(elements, "error", "초기화 실패", formatError(error));
   }
 }
 
-function attachContentToMapGroup() {
-  const mapGroup = multisetAR?.getMapGroup();
-  if (!mapGroup || !scene3d?.root) return;
-  if (scene3d.root.parent !== mapGroup) {
-    // Multiset이 보정하는 map 좌표계 아래에 붙여야 실제 공간에 고정됩니다.
-    mapGroup.add(scene3d.root);
+async function startARSession({ fallbackToButton = false } = {}) {
+  if (!multisetAR) return;
+
+  elements.startButton.disabled = true;
+  elements.stopButton.disabled = false;
+  elements.startButton.textContent = "공간 스캔 중";
+  setStatus(elements, "running", "AR 세션 시작 중", "카메라 권한을 허용해주세요.");
+
+  try {
+    await multisetAR.start();
+    arSessionStarted = true;
+    retryAvailable = false;
+    waitingForUserStart = false;
+    void retryLocalization();
+  } catch (error) {
+    if (isRecoverableLocalizationError(error)) {
+      arSessionStarted = multisetAR.isActive();
+      showRetryStatus(error);
+      return;
+    }
+
+    elements.startButton.disabled = false;
+    elements.startButton.textContent = "다시 시도";
+    elements.stopButton.disabled = true;
+    waitingForUserStart = fallbackToButton;
+    setStatus(
+      elements,
+      fallbackToButton ? "ready" : "error",
+      fallbackToButton ? "주변을 천천히 비춰주세요" : "AR 시작 실패",
+      fallbackToButton
+        ? "화면을 한 번 터치하면\n공간 스캔을 이어서 시작합니다."
+        : formatError(error),
+    );
   }
+}
+
+async function retryLocalization() {
+  if (!multisetAR) return;
+
+  retryAvailable = false;
+  elements.startButton.disabled = true;
+  elements.startButton.textContent = "공간 스캔 중";
+  setStatus(elements, "running", "주변을 천천히 비춰주세요", "휴대폰을 좌우로 천천히 움직여\n전시 안내판과 주변을 함께 담아주세요.");
+
+  try {
+    const result = await multisetAR.localizeFrame();
+    if (!result) {
+      showRetryStatus();
+    }
+  } catch (error) {
+    showRetryStatus(error);
+  }
+}
+
+function showRetryStatus(error) {
+  retryAvailable = true;
+  waitingForUserStart = false;
+  elements.startButton.disabled = false;
+  elements.startButton.textContent = "다시 시도";
+  elements.stopButton.disabled = false;
+  setStatus(
+    elements,
+    "retry",
+    "공간 인식이 어려워요",
+    "주변을 천천히 다시 비춘 뒤\n아래 버튼을 눌러 재시도해주세요.",
+  );
+}
+
+function isRecoverableLocalizationError(error) {
+  const message = formatError(error).toLowerCase();
+  return (
+    message.includes("pose") ||
+    message.includes("localiz") ||
+    message.includes("confidence") ||
+    message.includes("attempt")
+  );
 }
 
 function cleanup() {
@@ -125,5 +239,9 @@ function cleanup() {
   multisetAR = undefined;
   scene3d = undefined;
   anchors = [];
+  autoStartTried = false;
+  waitingForUserStart = false;
+  arSessionStarted = false;
+  retryAvailable = false;
 }
 

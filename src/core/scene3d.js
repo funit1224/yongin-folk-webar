@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { MapSpace } from "@multisetai/vps/three";
 import { addSceneLighting } from "./lighting.js";
 
 export function createScene3D(
@@ -27,11 +28,18 @@ export function createScene3D(
     100,
   );
 
+  const mapRoot = new THREE.Group();
+  mapRoot.name = "FolkVillageMapSpaceRoot";
+  const mapSpace = new MapSpace(mapRoot, {
+    hideUntilLocalized: true,
+  });
+  scene.add(mapSpace.object);
+
   const root = new THREE.Group();
   root.name = "FolkVillageContentRoot";
   // VPS 위치 인식 전에는 콘텐츠를 숨깁니다.
   root.visible = false;
-  scene.add(root);
+  mapSpace.add(root);
 
   // GLB가 너무 어둡게 보이지 않도록 공통 조명을 둡니다.
   addSceneLighting(scene);
@@ -51,6 +59,7 @@ export function createScene3D(
     renderer,
     scene,
     camera,
+    mapSpace,
     root,
     dispose() {
       window.removeEventListener(
