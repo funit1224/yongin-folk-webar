@@ -18,6 +18,7 @@ body {
 }
 
 .splash-shell {
+  /* 360x640 디자인을 화면 전체 cover 방식으로 보여주는 바깥 영역입니다. */
   display: grid;
   place-items: center;
   width: 100vw;
@@ -29,6 +30,7 @@ body {
 }
 
 .splash-frame {
+  /* 화면 비율이 달라도 스플래시가 빈틈 없이 차도록 원본 비율을 확대합니다. */
   position: relative;
   display: block;
   width: max(100vw, calc(100dvh * 360 / 640));
@@ -74,6 +76,7 @@ body {
 }
 
 .splash-gradient {
+  /* 배경/캐릭터 위, 로고/버튼 아래에 깔리는 상하 갈색 그라데이션입니다. */
   position: absolute;
   inset: 0;
   pointer-events: none;

@@ -8,6 +8,7 @@ export async function isMultisetWebARSupported() {
   return ThreeAdapter.isSupported();
 }
 
+// Multiset 인증, WebXR 세션, Three.js adapter를 한 번에 구성합니다.
 export async function createMultisetAR({
   clientId,
   clientSecret,
@@ -21,6 +22,7 @@ export async function createMultisetAR({
   onFrame,
   onLocalized,
 }) {
+  // 선택된 Map Code로 위치 인식 대상 지도를 지정합니다.
   const client = new MultisetClient({
     clientId,
     clientSecret,
@@ -30,6 +32,7 @@ export async function createMultisetAR({
 
   await client.authorize();
 
+  // SDK가 카메라 프레임을 기반으로 VPS 위치 인식을 수행합니다.
   const session = new XRSessionManager(renderer.getContext(), {
     client,
     overlayRoot,
@@ -72,6 +75,7 @@ export async function createMultisetAR({
     useDefaultButton: false,
     onXRFrame: (event) => {
       onFrame?.(event.deltaSeconds);
+      // SDK 디버그 mesh/gizmo는 숨기고 커스텀 콘텐츠만 남깁니다.
       hideSdkDebugChildren(adapter, contentRoot);
     },
     onLocalizationSuccess: () => {

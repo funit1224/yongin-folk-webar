@@ -3,6 +3,7 @@ import * as THREE from "three";
 export function createScene3D(
   container = document.body,
 ) {
+  // WebXR 배경 카메라 위에 Three.js 콘텐츠를 투명하게 올립니다.
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
     alpha: true,
@@ -27,9 +28,11 @@ export function createScene3D(
 
   const root = new THREE.Group();
   root.name = "FolkVillageContentRoot";
+  // VPS 위치 인식 전에는 콘텐츠를 숨깁니다.
   root.visible = false;
   scene.add(root);
 
+  // GLB가 너무 어둡게 보이지 않도록 기본 조명을 둡니다.
   scene.add(
     new THREE.HemisphereLight(
       0xffffff,

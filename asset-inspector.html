@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>민속촌 AR 에셋 방향 확인</title>
+  </head>
+  <body>
+    <main class="preview-shell">
+      <aside class="preview-panel">
+        <p class="eyebrow">Asset Inspector</p>
+        <h1>에셋 방향 확인</h1>
+        <label>
+          <span>에셋</span>
+          <select id="asset-select"></select>
+        </label>
+        <section class="control-panel" aria-label="보기 방향">
+          <h2>보기 방향</h2>
+          <div class="button-grid">
+            <button type="button" data-view="+z">+Z에서 보기</button>
+            <button type="button" data-view="-z">-Z에서 보기</button>
+            <button type="button" data-view="+x">+X에서 보기</button>
+            <button type="button" data-view="-x">-X에서 보기</button>
+          </div>
+          <p class="hint">
+            얼굴이 정면으로 보이는 버튼의 축이 GLB에 저장된 앞 방향입니다.
+          </p>
+        </section>
+        <section class="control-panel" aria-label="축 설명">
+          <h2>축 색상</h2>
+          <p class="axis-label red">빨강: +X</p>
+          <p class="axis-label green">초록: +Y</p>
+          <p class="axis-label blue">파랑: +Z</p>
+        </section>
+        <p id="asset-status">에셋을 불러오는 중입니다.</p>
+      </aside>
+      <div id="asset-stage"></div>
+    </main>
+    <script type="module" src="/src/asset-inspector.js"></script>
+  </body>
+</html>

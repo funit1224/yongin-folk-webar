@@ -20,6 +20,7 @@ canvas {
 }
 
 .overlay {
+  /* WebXR canvas 위에 상태/버튼 UI를 얹습니다. */
   pointer-events: none;
   position: fixed;
   inset: 0;
@@ -83,6 +84,7 @@ select {
 }
 
 .status-card {
+  /* Multiset 인증, 위치 인식, 오류 상태를 사용자에게 보여줍니다. */
   margin: auto 0 14px;
   padding: 14px;
   border-radius: 8px;

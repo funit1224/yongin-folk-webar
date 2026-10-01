@@ -43,6 +43,7 @@ let previewRun = 0;
 const clock = new THREE.Clock();
 const loader = new GLTFLoader();
 const dracoLoader = new DRACOLoader();
+// Multiset에서 내려받은 공간 mesh가 Draco 압축 GLB라 디코더가 필요합니다.
 dracoLoader.setDecoderPath("/draco/");
 loader.setDRACOLoader(dracoLoader);
 
@@ -73,6 +74,7 @@ function populateSelect() {
 }
 
 function init() {
+  // AR 없이 PC 브라우저에서 배치만 확인하는 Three.js 장면입니다.
   renderer = new THREE.WebGLRenderer({
     antialias: true,
   });
@@ -106,6 +108,7 @@ function init() {
   root = new THREE.Group();
   mapRoot = new THREE.Group();
   mapRoot.name = "PreviewMapMesh";
+  // mapRoot는 공간 mesh, root는 전시 오브젝트 묶음입니다.
   scene.add(mapRoot);
   scene.add(root);
   grid = new THREE.GridHelper(
@@ -138,6 +141,7 @@ function init() {
 async function loadPreview(sceneId) {
   const runId = ++previewRun;
   const sceneConfig = getScene(sceneId);
+  // scene 전환 중 이전 비동기 로드 결과가 뒤늦게 반영되지 않도록 runId를 사용합니다.
   mapRoot.clear();
   root.clear();
   anchors = [];
@@ -148,6 +152,7 @@ async function loadPreview(sceneId) {
   status.textContent = `${sceneConfig.label} 모델을 먼저 불러오는 중입니다.`;
 
   try {
+    // 무거운 공간 mesh보다 에셋을 먼저 보여줘서 빈 화면 대기를 줄입니다.
     anchors = await loadSceneAssets(
       root,
       sceneConfig.assets,
@@ -183,6 +188,7 @@ async function loadPreviewMesh(
 ) {
   if (!sceneConfig.previewMeshPath) return;
 
+  // 실제 Multiset map 좌표계 확인용 textured mesh를 불러옵니다.
   const gltf = await loadGltfWithProgress(
     sceneConfig.previewMeshPath,
     onProgress,
@@ -195,6 +201,7 @@ async function loadPreviewMesh(
   mesh.traverse((object) => {
     if (!object.isMesh) return;
     object.frustumCulled = false;
+    // 위치 확인이 목적이라 원본 텍스처 대신 반투명 단색으로 표시합니다.
     object.material = new THREE.MeshBasicMaterial(
       {
         color: 0x8f8577,
@@ -260,6 +267,7 @@ function formatError(error) {
 }
 
 function frameObject(object) {
+  // 큰 공간 mesh가 화면 밖에 있지 않도록 카메라를 자동 배치합니다.
   object.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(
     object,
@@ -319,6 +327,7 @@ function setOffsetInputs(offset) {
 }
 
 function applyPlacementOffsetFromInputs() {
+  // 왼쪽 패널 입력값으로 전시물 전체 위치를 즉시 보정합니다.
   const offset = [
     readInputNumber(offsetInputs.x),
     readInputNumber(offsetInputs.y),

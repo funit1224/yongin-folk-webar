@@ -8,6 +8,7 @@ export default defineConfig({
         index: resolve(__dirname, "index.html"),
         webar: resolve(__dirname, "webar.html"),
         placementPreview: resolve(__dirname, "placement-preview.html"),
+        assetInspector: resolve(__dirname, "asset-inspector.html"),
       },
     },
   },

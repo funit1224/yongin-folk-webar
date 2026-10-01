@@ -12,6 +12,7 @@ body {
 }
 
 .preview-shell {
+  /* 왼쪽 조정 패널과 오른쪽 3D 미리보기를 나눕니다. */
   display: grid;
   grid-template-columns: 280px 1fr;
   width: 100%;
@@ -61,6 +62,7 @@ input {
 }
 
 .control-panel {
+  /* 배치 전체 offset을 현장에서 빠르게 맞추기 위한 입력 묶음입니다. */
   display: grid;
   gap: 12px;
   margin-top: 20px;
@@ -86,13 +88,65 @@ input {
   line-height: 1.5;
 }
 
-#preview-stage {
+#preview-stage,
+#asset-stage {
   min-width: 0;
   min-height: 0;
 }
 
+#asset-stage {
+  height: 100vh;
+}
+
 canvas {
   display: block;
+}
+
+.button-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.button-grid button {
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid #d6d3d1;
+  border-radius: 8px;
+  background: #fff;
+  color: #1c1917;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.button-grid button:hover {
+  border-color: #7c2d12;
+}
+
+.hint {
+  margin: 0;
+  color: #57534e;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.axis-label {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.axis-label.red {
+  color: #dc2626;
+}
+
+.axis-label.green {
+  color: #16a34a;
+}
+
+.axis-label.blue {
+  color: #2563eb;
 }
 
 @media (max-width: 760px) {
