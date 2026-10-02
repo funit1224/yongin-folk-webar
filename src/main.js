@@ -4,10 +4,7 @@ import {
   DEFAULT_SCENE,
   validateMapConfig,
 } from "./config/maps.js";
-import {
-  BUTTON_LABELS,
-  STATUS_MESSAGES,
-} from "./config/messages.js";
+import { STATUS_MESSAGES } from "./config/messages.js";
 import {
   getScene,
   listScenes,
@@ -28,6 +25,7 @@ import {
   populateSceneSelect,
   setStatus,
 } from "./ui/dom.js";
+import { createARSessionFlow } from "./webar/ar-session-flow.js";
 
 const clientId = import.meta.env
   .VITE_MULTISET_CLIENT_ID;
@@ -35,9 +33,12 @@ const clientSecret = import.meta.env
   .VITE_MULTISET_CLIENT_SECRET;
 const shouldAutoBootWebAR =
   document.body.dataset.autoBootWebar === "true";
-const LOCALIZATION_CAPTURE_DELAY_MS = 2500;
 
 const elements = getDom();
+const arSessionFlow = createARSessionFlow({
+  elements,
+  setStatus,
+});
 let currentSceneId =
   new URLSearchParams(location.search).get(
     "scene",
@@ -47,12 +48,8 @@ let multisetAR;
 let anchors = [];
 let setupRun = 0;
 let autoStartTried = false;
-let waitingForUserStart = false;
-let arSessionStarted = false;
-let retryAvailable = false;
 let initialized = false;
 let pendingStart = false;
-let localizationRun = 0;
 
 // URL의 scene 파라미터 또는 기본 scene을 기준으로 드롭다운을 초기화합니다.
 populateSceneSelect(
@@ -72,25 +69,18 @@ elements.sceneSelect.addEventListener(
 elements.startButton.addEventListener(
   "click",
   () => {
-    if (retryAvailable && arSessionStarted) {
-      void retryLocalization();
-      return;
-    }
-
-    void startARSession();
+    arSessionFlow.handleStartButton();
   },
 );
 
 elements.overlay.addEventListener("click", () => {
-  if (!waitingForUserStart) return;
-  waitingForUserStart = false;
-  void startARSession();
+  arSessionFlow.handleOverlayTap();
 });
 
 elements.stopButton.addEventListener(
   "click",
   () => {
-    multisetAR?.stop();
+    arSessionFlow.stop();
   },
 );
 
@@ -133,12 +123,7 @@ export async function initializeWebARApp() {
 
 export function requestARStart() {
   pendingStart = true;
-  waitingForUserStart = true;
-  if (multisetAR) {
-    void startARSession({
-      fallbackToButton: true,
-    });
-  }
+  arSessionFlow.requestStart();
 }
 
 async function setup(sceneId) {
@@ -158,10 +143,6 @@ async function setup(sceneId) {
     preparingMapMessage.title,
     preparingMapMessage.detail,
   );
-  elements.overlay.classList.remove(
-    "is-localized",
-  );
-
   cleanup();
   scene3d = createScene3D(document.body);
   // preview에서 확정한 장면 전체 보정값을 실제 AR에도 동일하게 적용합니다.
@@ -192,29 +173,21 @@ async function setup(sceneId) {
       onFrame: (deltaSeconds) =>
         updateSceneAssets(anchors, deltaSeconds),
       onLocalized: () => {
-        // 위치 인식 성공 후에만 콘텐츠 root를 표시합니다.
-        scene3d.root.visible = true;
-        elements.overlay.classList.add(
-          "is-localized",
-        );
-        setStatus(
-          elements,
-          "success",
-          STATUS_MESSAGES.localized.title,
-          STATUS_MESSAGES.localized.detail,
-        );
+        arSessionFlow.handleLocalized();
       },
       onLocalizationFailure: (reason) => {
-        showRetryStatus(reason);
+        arSessionFlow.showRetryStatus(reason);
       },
       onSessionEnd: () => {
-        resetARSessionState();
+        arSessionFlow.resetARSessionState();
       },
       onError: (error) => {
         if (
-          isRecoverableLocalizationError(error)
+          arSessionFlow.isRecoverableLocalizationError(
+            error,
+          )
         ) {
-          showRetryStatus(error);
+          arSessionFlow.showRetryStatus(error);
           return;
         }
 
@@ -228,6 +201,10 @@ async function setup(sceneId) {
     });
 
     if (runId !== setupRun) return;
+    arSessionFlow.bindRuntime({
+      multisetAR,
+      scene3d,
+    });
     multisetAR.connectMapSpace(scene3d.mapSpace);
     setStatus(
       elements,
@@ -236,14 +213,14 @@ async function setup(sceneId) {
       STATUS_MESSAGES.scanReady.detail,
     );
     elements.startButton.disabled = false;
-    waitingForUserStart = true;
+    arSessionFlow.setWaitingForUserStart(true);
     if (
       pendingStart ||
       (shouldAutoBootWebAR && !autoStartTried)
     ) {
       pendingStart = false;
       autoStartTried = true;
-      void startARSession({
+      void arSessionFlow.startARSession({
         fallbackToButton: true,
       });
     }
@@ -257,161 +234,13 @@ async function setup(sceneId) {
   }
 }
 
-async function startARSession({
-  fallbackToButton = false,
-} = {}) {
-  if (!multisetAR) return;
-
-  resetLocalizationView();
-  elements.startButton.disabled = true;
-  elements.stopButton.disabled = false;
-  elements.startButton.textContent =
-    BUTTON_LABELS.scanning;
-  setStatus(
-    elements,
-    "running",
-    STATUS_MESSAGES.sessionStarting.title,
-    STATUS_MESSAGES.sessionStarting.detail,
-  );
-
-  try {
-    await multisetAR.start();
-    arSessionStarted = true;
-    retryAvailable = false;
-    waitingForUserStart = false;
-    void retryLocalization();
-  } catch (error) {
-    if (isRecoverableLocalizationError(error)) {
-      arSessionStarted = multisetAR.isActive();
-      showRetryStatus(error);
-      return;
-    }
-
-    elements.startButton.disabled = false;
-    elements.startButton.textContent =
-      BUTTON_LABELS.retry;
-    elements.stopButton.disabled = true;
-    waitingForUserStart = fallbackToButton;
-    setStatus(
-      elements,
-      fallbackToButton ? "ready" : "error",
-      fallbackToButton
-        ? STATUS_MESSAGES.startFallback.title
-        : STATUS_MESSAGES.arStartFailed.title,
-      fallbackToButton
-        ? STATUS_MESSAGES.startFallback.detail
-        : formatError(error),
-    );
-  }
-}
-
-async function retryLocalization() {
-  if (!multisetAR) return;
-
-  const runId = ++localizationRun;
-  retryAvailable = false;
-  elements.startButton.disabled = true;
-  elements.startButton.textContent =
-    BUTTON_LABELS.scanning;
-  setStatus(
-    elements,
-    "running",
-    STATUS_MESSAGES.scanReady.title,
-    STATUS_MESSAGES.scanReady.detail,
-  );
-
-  try {
-    await sleep(LOCALIZATION_CAPTURE_DELAY_MS);
-    if (
-      runId !== localizationRun ||
-      !multisetAR
-    ) {
-      return;
-    }
-
-    const result =
-      await multisetAR.localizeFrame();
-    if (runId !== localizationRun) return;
-
-    if (!result) {
-      showRetryStatus();
-    }
-  } catch (error) {
-    if (runId !== localizationRun) return;
-    showRetryStatus(error);
-  }
-}
-
-function showRetryStatus(error) {
-  retryAvailable = true;
-  waitingForUserStart = false;
-  elements.startButton.disabled = false;
-  elements.startButton.textContent =
-    BUTTON_LABELS.retry;
-  elements.stopButton.disabled = false;
-  setStatus(
-    elements,
-    "retry",
-    STATUS_MESSAGES.retry.title,
-    STATUS_MESSAGES.retry.detail,
-  );
-}
-
-function resetLocalizationView() {
-  localizationRun += 1;
-  retryAvailable = false;
-  elements.overlay.classList.remove(
-    "is-localized",
-  );
-
-  if (scene3d?.root) {
-    scene3d.root.visible = false;
-  }
-}
-
-function resetARSessionState() {
-  resetLocalizationView();
-  arSessionStarted = false;
-  waitingForUserStart = false;
-  elements.startButton.disabled = false;
-  elements.startButton.textContent =
-    BUTTON_LABELS.scanIdle;
-  elements.stopButton.disabled = true;
-  setStatus(
-    elements,
-    "ready",
-    STATUS_MESSAGES.scanReady.title,
-    STATUS_MESSAGES.scanReady.detail,
-  );
-}
-
-function isRecoverableLocalizationError(error) {
-  const message =
-    formatError(error).toLowerCase();
-  return (
-    message.includes("pose") ||
-    message.includes("localiz") ||
-    message.includes("confidence") ||
-    message.includes("attempt")
-  );
-}
-
 function cleanup() {
   // scene을 바꿀 때 이전 WebXR/Three.js 리소스를 정리합니다.
-  localizationRun += 1;
   multisetAR?.dispose();
   scene3d?.dispose();
   multisetAR = undefined;
   scene3d = undefined;
   anchors = [];
   autoStartTried = false;
-  waitingForUserStart = false;
-  arSessionStarted = false;
-  retryAvailable = false;
-}
-
-function sleep(ms) {
-  return new Promise((resolve) => {
-    window.setTimeout(resolve, ms);
-  });
+  arSessionFlow.resetForSetup();
 }
