@@ -3,6 +3,7 @@ import {
   XRSessionManager,
 } from "@multisetai/vps/core";
 import { ThreeAdapter } from "@multisetai/vps/three";
+import { STATUS_MESSAGES } from "../config/messages.js";
 
 export async function isMultisetWebARSupported() {
   return ThreeAdapter.isSupported();
@@ -35,35 +36,45 @@ export async function createMultisetAR({
   await client.authorize();
 
   // SDK가 카메라 프레임을 기반으로 VPS 위치 인식을 수행합니다.
-  const session = new XRSessionManager(renderer.getContext(), {
-    client,
-    overlayRoot,
-    autoLocalize: false,
-    relocalization: false,
-    backgroundLocalization: false,
-    confidenceCheck: true,
-    confidenceThreshold: 0.75,
-    poseTimeoutMs: 15000,
-    framebufferScaleFactor: 1,
-    onSessionStart: () => {
-      onStatus("running", "주변을 천천히 비춰주세요", "휴대폰을 좌우로 천천히 움직여\n전시 안내판과 주변을 함께 담아주세요.");
+  const session = new XRSessionManager(
+    renderer.getContext(),
+    {
+      client,
+      overlayRoot,
+      autoLocalize: false,
+      relocalization: false,
+      backgroundLocalization: false,
+      confidenceCheck: true,
+      confidenceThreshold: 0.75,
+      poseTimeoutMs: 15000,
+      framebufferScaleFactor: 1,
+      onSessionStart: () => {
+        onStatus(
+          "running",
+          STATUS_MESSAGES.scanReady.title,
+          STATUS_MESSAGES.scanReady.detail,
+        );
+      },
+      onSessionEnd: () => {},
+      onLocalizationResult: (result) => {
+        const confidence =
+          result?.localizeData?.confidence;
+        const scanCompleteMessage =
+          STATUS_MESSAGES.scanComplete(confidence);
+        onStatus(
+          "success",
+          scanCompleteMessage.title,
+          scanCompleteMessage.detail,
+        );
+      },
+      onLocalizationFailure: (reason) => {
+        onLocalizationFailure?.(reason);
+      },
+      onError: (error) => {
+        onError?.(error);
+      },
     },
-    onSessionEnd: () => {},
-    onLocalizationResult: (result) => {
-      const confidence = result?.localizeData?.confidence;
-      const detail =
-        typeof confidence === "number"
-          ? `위치 인식 성공. 신뢰도 ${(confidence * 100).toFixed(0)}%.`
-          : "위치 인식 성공.";
-      onStatus("success", "공간 스캔 완료", detail);
-    },
-    onLocalizationFailure: (reason) => {
-      onLocalizationFailure?.(reason);
-    },
-    onError: (error) => {
-      onError?.(error);
-    },
-  });
+  );
 
   const adapter = new ThreeAdapter({
     session,
@@ -99,7 +110,11 @@ export async function createMultisetAR({
       return adapter.startSession();
     },
     isActive() {
-      return adapter.isActive?.() ?? session.isActive?.() ?? false;
+      return (
+        adapter.isActive?.() ??
+        session.isActive?.() ??
+        false
+      );
     },
     localizeFrame() {
       return adapter.localizeFrame();
@@ -114,20 +129,21 @@ export async function createMultisetAR({
   };
 }
 
-function hideSdkDebugChildren(adapter, contentRoot) {
-  const mapGroup = adapter?.world?.meshVisualizer?.getMeshGroup?.();
+function hideSdkDebugChildren(
+  adapter,
+  contentRoot,
+) {
+  const mapGroup =
+    adapter?.world?.meshVisualizer?.getMeshGroup?.();
   if (!mapGroup) return;
 
   for (const child of mapGroup.children) {
-    if (child !== contentRoot && child !== contentRoot.parent) {
+    if (
+      child !== contentRoot &&
+      child !== contentRoot.parent
+    ) {
       child.visible = false;
     }
   }
-}
-
-function formatError(error) {
-  if (!error) return "";
-  if (typeof error === "string") return error;
-  return error.message || String(error);
 }
 

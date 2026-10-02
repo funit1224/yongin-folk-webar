@@ -2,54 +2,132 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
     <title>시간의 마패</title>
   </head>
   <body>
-    <main class="splash-shell" aria-label="시간의 마패 스플래시">
-      <button id="start-experience" class="splash-frame" type="button" aria-label="WebAR 체험 시작">
-        <img class="splash-bg" src="/assets/splash/splash-bg.png" alt="" />
-        <img class="character" src="/assets/splash/character.png" alt="" />
-        <span class="splash-gradient" aria-hidden="true"></span>
-        <img class="title-logo" src="/assets/splash/title-logo.png" alt="시간의 마패" />
-        <img class="touch-button" src="/assets/splash/touch-button.png" alt="화면을 터치하세요!" />
-        <img class="folk-village-logo" src="/assets/splash/folk-village-logo.png" alt="한국민속촌" />
-        <img class="partner-logos" src="/assets/splash/partner-logos.png" alt="" />
+    <main
+      class="splash-shell"
+      aria-label="시간의 마패 스플래시"
+    >
+      <button
+        id="start-experience"
+        class="splash-frame"
+        type="button"
+        aria-label="WebAR 체험 시작"
+      >
+        <img
+          class="splash-bg"
+          src="/assets/splash/splash-bg.png"
+          alt=""
+        />
+        <img
+          class="character"
+          src="/assets/splash/character.png"
+          alt=""
+        />
+        <span
+          class="splash-gradient"
+          aria-hidden="true"
+        ></span>
+        <img
+          class="title-logo"
+          src="/assets/splash/title-logo.png"
+          alt="시간의 마패"
+        />
+        <img
+          class="touch-button"
+          src="/assets/splash/touch-button.png"
+          alt="화면을 터치하세요!"
+        />
+        <img
+          class="folk-village-logo"
+          src="/assets/splash/folk-village-logo.png"
+          alt="한국민속촌"
+        />
+        <img
+          class="partner-logos"
+          src="/assets/splash/partner-logos.png"
+          alt=""
+        />
       </button>
     </main>
     <main id="app-shell" hidden>
       <section id="overlay" class="overlay">
-        <select id="scene-select" aria-label="개발용 공간 선택" hidden></select>
+        <select
+          id="scene-select"
+          aria-label="개발용 공간 선택"
+          hidden
+        ></select>
 
-        <div class="scan-guide" aria-hidden="true">
-          <img class="scan-grid" src="/assets/webar/Motion4.png" alt="" />
+        <div
+          class="scan-guide"
+          aria-hidden="true"
+        >
+          <img
+            class="scan-grid"
+            src="/assets/webar/Motion4.png"
+            alt=""
+          />
           <div class="scan-phone-wrap">
-            <img class="scan-phone" src="/assets/webar/Motion1.png" alt="" />
-            <img class="scan-line" src="/assets/webar/Motion2.png" alt="" />
+            <img
+              class="scan-phone"
+              src="/assets/webar/Motion1.png"
+              alt=""
+            />
+            <img
+              class="scan-line"
+              src="/assets/webar/Motion2.png"
+              alt=""
+            />
           </div>
         </div>
 
-        <section id="status-card" class="status-card status-pending">
+        <section
+          id="status-card"
+          class="status-card status-pending"
+        >
           <p class="status-kicker">공간스캔중</p>
-          <strong id="status-title">주변을 천천히 비춰주세요</strong>
-          <p id="status-detail">
-            휴대폰을 좌우로 천천히 움직여
-            전시 안내판과 주변을 함께 담아주세요.
-          </p>
-          <div class="scan-progress" aria-hidden="true">
+          <strong id="status-title"></strong>
+          <p id="status-detail"></p>
+          <div
+            class="scan-progress"
+            aria-hidden="true"
+          >
             <span class="dot dot-active"></span>
             <span class="dot"></span>
             <span class="dot"></span>
-            <small>현재 위치를 확인하고 있어요.</small>
+            <small
+              >현재 위치를 확인하고 있어요.</small
+            >
           </div>
         </section>
 
         <div class="actions">
-          <button id="start-ar" type="button" disabled>공간 스캔 시작</button>
-          <button id="stop-ar" type="button" disabled aria-label="AR 종료">종료</button>
+          <button
+            id="start-ar"
+            type="button"
+            disabled
+          >
+            AR 준비 중
+          </button>
+          <button
+            id="stop-ar"
+            type="button"
+            disabled
+            aria-label="AR 종료"
+          >
+            종료
+          </button>
         </div>
       </section>
     </main>
-    <script type="module" src="/src/splash.js"></script>
+    <script
+      type="module"
+      src="/src/splash.js"
+    ></script>
   </body>
 </html>
