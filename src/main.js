@@ -91,7 +91,6 @@ elements.stopButton.addEventListener(
   "click",
   () => {
     multisetAR?.stop();
-    elements.stopButton.disabled = true;
   },
 );
 
@@ -208,6 +207,9 @@ async function setup(sceneId) {
       onLocalizationFailure: (reason) => {
         showRetryStatus(reason);
       },
+      onSessionEnd: () => {
+        resetARSessionState();
+      },
       onError: (error) => {
         if (
           isRecoverableLocalizationError(error)
@@ -260,6 +262,7 @@ async function startARSession({
 } = {}) {
   if (!multisetAR) return;
 
+  resetLocalizationView();
   elements.startButton.disabled = true;
   elements.stopButton.disabled = false;
   elements.startButton.textContent =
@@ -351,6 +354,34 @@ function showRetryStatus(error) {
     "retry",
     STATUS_MESSAGES.retry.title,
     STATUS_MESSAGES.retry.detail,
+  );
+}
+
+function resetLocalizationView() {
+  localizationRun += 1;
+  retryAvailable = false;
+  elements.overlay.classList.remove(
+    "is-localized",
+  );
+
+  if (scene3d?.root) {
+    scene3d.root.visible = false;
+  }
+}
+
+function resetARSessionState() {
+  resetLocalizationView();
+  arSessionStarted = false;
+  waitingForUserStart = false;
+  elements.startButton.disabled = false;
+  elements.startButton.textContent =
+    BUTTON_LABELS.scanIdle;
+  elements.stopButton.disabled = true;
+  setStatus(
+    elements,
+    "ready",
+    STATUS_MESSAGES.scanReady.title,
+    STATUS_MESSAGES.scanReady.detail,
   );
 }
 

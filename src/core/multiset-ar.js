@@ -23,6 +23,7 @@ export async function createMultisetAR({
   onFrame,
   onLocalized,
   onLocalizationFailure,
+  onSessionEnd,
   onError,
 }) {
   // 선택된 Map Code로 위치 인식 대상 지도를 지정합니다.
@@ -55,7 +56,9 @@ export async function createMultisetAR({
           STATUS_MESSAGES.scanReady.detail,
         );
       },
-      onSessionEnd: () => {},
+      onSessionEnd: () => {
+        onSessionEnd?.();
+      },
       onLocalizationResult: (result) => {
         const confidence =
           result?.localizeData?.confidence;
