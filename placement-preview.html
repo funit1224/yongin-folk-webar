@@ -30,6 +30,44 @@
           </label>
           <pre id="offset-output">placementOffset: [0, 0, 0]</pre>
         </section>
+        <section class="control-panel" aria-label="에셋별 배치 조정">
+          <h2>에셋별 위치</h2>
+          <label>
+            <span>에셋 선택</span>
+            <select id="asset-select"></select>
+          </label>
+          <div class="inline-controls">
+            <label>
+              <span>X 좌우</span>
+              <input id="asset-x" type="number" step="0.1" value="0" />
+            </label>
+            <label>
+              <span>Y 높이</span>
+              <input id="asset-y" type="number" step="0.05" value="0" />
+            </label>
+            <label>
+              <span>Z 앞뒤</span>
+              <input id="asset-z" type="number" step="0.1" value="0" />
+            </label>
+          </div>
+          <p class="hint">
+            X는 좌우, Z는 앞뒤입니다. Y는 바닥 높이가 틀어진 경우에만 조절하세요.
+          </p>
+          <label>
+            <span>회전 보정 Y도</span>
+            <input id="asset-rotation-y" type="number" step="5" value="0" />
+          </label>
+          <p class="hint">
+            위치를 바꾸면 기본 방향은 자동으로 중심을 봅니다. 이 값은 거기서 추가로 돌리는 각도입니다.
+          </p>
+        </section>
+        <section class="control-panel" aria-label="좌표 코드 복사">
+          <div class="panel-title-row">
+            <h2>현재 좌표 코드</h2>
+            <button id="copy-placements" type="button">복사</button>
+          </div>
+          <pre id="placements-output">ASSET_PLACEMENTS = []</pre>
+        </section>
         <p id="preview-status">모델을 불러오는 중입니다.</p>
       </aside>
       <div id="preview-stage"></div>

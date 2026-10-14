@@ -1,12 +1,12 @@
 const MODEL_BASE = "/assets/models/glb";
-// 9개 전시물을 배치할 원의 중심 좌표입니다. [x 좌우, y 높이, z 앞뒤]
-const PLACEMENT_CENTER = [-1.2, -1.05, -9.35];
-// 9개 전시물 사이 간격을 조절하는 원 반경입니다.
-const PLACEMENT_RADIUS = 3.8;
+// 9개 전시물이 바라볼 기준점입니다. [x 좌우, y 높이, z 앞뒤]
+export const PLACEMENT_CENTER = [
+  -1.2, -1.05, -9.35,
+];
 // 각 에셋에 공통으로 적용되는 기본 렌더링 설정입니다.
 const DEFAULT_ASSET_SETTINGS = {
   // 1이면 GLB 원본 크기 그대로 사용합니다.
-  scale: 1.4,
+  scale: 0.93,
   // false면 GLB 제공자가 만든 원본 재질과 조명 반응을 유지합니다.
   unlit: false,
   // true면 GLB 내부 애니메이션이 있을 때 자동 재생합니다.
@@ -14,29 +14,49 @@ const DEFAULT_ASSET_SETTINGS = {
 };
 
 // Multiset Test03 map 좌표 기준 마당 배치입니다.
-// 중심과 반경을 바꾸면 9개 전시물이 같은 간격의 원형으로 다시 배치됩니다.
+// 현장 수정 요청에 맞춰 원형 배치 대신 마당에 흩어진 수동 좌표를 사용합니다.
 // 스캔 mesh 기준 원점 y=0이 실제 바닥과 맞지 않아, 전시물 전체를 바닥 쪽으로 낮췄습니다.
 // 각 position은 [x, y, z]이며, scale 1은 GLB 원본 크기입니다.
 // placementOffset은 장면 전체를 한 번 더 이동합니다.
-const makeCirclePosition = (index) => {
-  const [centerX, centerY, centerZ] =
-    PLACEMENT_CENTER;
-  const angle =
-    -Math.PI / 2 + (index * Math.PI * 2) / 9;
+const ASSET_PLACEMENTS = [
+  [0, -1.05, -13],
+  [-3.2, -1.05, -12.4],
+  [2.2, -1.05, -10.5],
+  [2.1, -1.05, -6.4],
+  [-2.5, -1.05, -7],
+  [-1, -1.05, -5],
+  [-0.4, -1.05, -8.3],
+  [-4, -1.05, -9.8],
+  [-1, -1.05, -11],
+];
 
-  return [
-    centerX + Math.cos(angle) * PLACEMENT_RADIUS,
-    centerY,
-    centerZ + Math.sin(angle) * PLACEMENT_RADIUS,
-  ];
-};
+const degreesToRadians = (degrees) =>
+  (degrees * Math.PI) / 180;
 
-const makeCircleRotation = (
-  index,
+// 자동으로 중심을 바라본 뒤, 에셋별로 추가 보정할 Y축 회전값입니다.
+// Math.PI / 2는 90도, -Math.PI / 2는 -90도입니다.
+const ASSET_ROTATION_OFFSETS = [
+  degreesToRadians(30),
+  degreesToRadians(45),
+  0,
+  degreesToRadians(60),
+  degreesToRadians(60),
+  degreesToRadians(10),
+  degreesToRadians(82),
+  degreesToRadians(50),
+  degreesToRadians(80),
+];
+
+export const makeLookAtCenterRotation = (
+  position,
   rotationOffset = 0,
 ) => {
-  const angle =
-    -Math.PI / 2 + (index * Math.PI * 2) / 9;
+  const [centerX, , centerZ] = PLACEMENT_CENTER;
+  const [x, , z] = position;
+  const angle = Math.atan2(
+    z - centerZ,
+    x - centerX,
+  );
 
   // 각 전시물이 원 바깥쪽이 아니라 중심 쪽을 바라보게 맞춥니다.
   return [
@@ -70,7 +90,6 @@ const commonAssets = [
   {
     name: "저울엽전",
     path: `${MODEL_BASE}/6_저울엽전.glb`,
-    rotationOffset: -Math.PI / 2,
   },
   {
     name: "만두",
@@ -87,10 +106,11 @@ const commonAssets = [
 ].map((asset, index) => ({
   ...DEFAULT_ASSET_SETTINGS,
   ...asset,
-  position: makeCirclePosition(index),
-  rotation: makeCircleRotation(
-    index,
-    asset.rotationOffset,
+  rotationOffset: ASSET_ROTATION_OFFSETS[index],
+  position: ASSET_PLACEMENTS[index],
+  rotation: makeLookAtCenterRotation(
+    ASSET_PLACEMENTS[index],
+    ASSET_ROTATION_OFFSETS[index],
   ),
 }));
 
