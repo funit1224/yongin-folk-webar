@@ -7,6 +7,7 @@ import { DEFAULT_SCENE } from "./config/maps.js";
 import {
   getScene,
   listScenes,
+  makeLookAtCenterRotation,
 } from "./config/scenes.js";
 import {
   loadSceneAssets,
@@ -16,6 +17,7 @@ import {
   addSceneLighting,
   addTargetAssetLighting,
 } from "./core/lighting.js";
+import { loadPreviewMesh } from "./preview/preview-mesh.js";
 
 const select = document.querySelector(
   "#preview-scene-select",
@@ -34,6 +36,23 @@ const offsetInputs = {
 const offsetOutput = document.querySelector(
   "#offset-output",
 );
+const assetSelect = document.querySelector(
+  "#asset-select",
+);
+const assetInputs = {
+  x: document.querySelector("#asset-x"),
+  y: document.querySelector("#asset-y"),
+  z: document.querySelector("#asset-z"),
+  rotationY: document.querySelector(
+    "#asset-rotation-y",
+  ),
+};
+const placementsOutput = document.querySelector(
+  "#placements-output",
+);
+const copyPlacementsButton = document.querySelector(
+  "#copy-placements",
+);
 
 let renderer;
 let scene;
@@ -43,6 +62,10 @@ let root;
 let mapRoot;
 let grid;
 let anchors = [];
+let assetPositions = [];
+let assetRotationOffsets = [];
+let selectedAssetIndex = 0;
+let selectedBoxHelper;
 let previewRun = 0;
 const clock = new THREE.Clock();
 const loader = new GLTFLoader();
@@ -65,6 +88,28 @@ for (const input of Object.values(offsetInputs)) {
     applyPlacementOffsetFromInputs,
   );
 }
+assetSelect.addEventListener(
+  "change",
+  handleAssetSelectionChange,
+);
+for (const input of [
+  assetInputs.x,
+  assetInputs.y,
+  assetInputs.z,
+]) {
+  input.addEventListener(
+    "input",
+    applySelectedAssetPositionFromInputs,
+  );
+}
+assetInputs.rotationY.addEventListener(
+  "input",
+  applySelectedAssetRotationFromInput,
+);
+copyPlacementsButton.addEventListener(
+  "click",
+  copyPlacementsCode,
+);
 
 function populateSelect() {
   for (const item of listScenes()) {
@@ -124,6 +169,13 @@ function init() {
   scene.add(grid);
   scene.add(new THREE.AxesHelper(1.2));
   addSceneLighting(scene);
+  selectedBoxHelper = new THREE.BoxHelper(
+    new THREE.Object3D(),
+    0xf97316,
+  );
+  selectedBoxHelper.name = "Selected Asset Bounds";
+  selectedBoxHelper.visible = false;
+  scene.add(selectedBoxHelper);
 
   window.addEventListener("resize", resize);
   renderer.setAnimationLoop(render);
@@ -136,10 +188,21 @@ async function loadPreview(sceneId) {
   mapRoot.clear();
   root.clear();
   anchors = [];
+  assetPositions = sceneConfig.assets.map((asset) => [
+    ...(asset.position || [0, 0, 0]),
+  ]);
+  assetRotationOffsets = sceneConfig.assets.map(
+    (asset) => asset.rotationOffset || 0,
+  );
+  selectedAssetIndex = 0;
+  populateAssetSelect(sceneConfig.assets);
   setOffsetInputs(
     sceneConfig.placementOffset || [0, 0, 0],
   );
   applyPlacementOffsetFromInputs();
+  syncSelectedAssetInputs();
+  updatePlacementsOutput();
+  updateSelectedHelper();
   status.textContent = `${sceneConfig.label} 모델을 먼저 불러오는 중입니다.`;
 
   try {
@@ -149,8 +212,10 @@ async function loadPreview(sceneId) {
       sceneConfig.assets,
     );
     addTargetAssetLighting(root, anchors);
+    applyAllAssetPositions();
     if (runId !== previewRun) return;
     root.visible = true;
+    updateSelectedHelper();
     status.textContent = `${sceneConfig.label} 모델 표시 완료. 공간 mesh를 불러오는 중입니다.`;
   } catch (error) {
     if (runId !== previewRun) return;
@@ -159,13 +224,17 @@ async function loadPreview(sceneId) {
   }
 
   try {
-    await loadPreviewMesh(
+    await loadPreviewMesh({
       sceneConfig,
-      (progress) => {
+      loader,
+      mapRoot,
+      camera,
+      controls,
+      onProgress: (progress) => {
         if (runId !== previewRun) return;
         status.textContent = `${sceneConfig.label} 공간 mesh 로딩 중 ${progress}`;
       },
-    );
+    });
     if (runId !== previewRun) return;
     status.textContent = `${sceneConfig.label} 실제 mesh 좌표계에서 배치를 확인 중입니다.`;
   } catch (error) {
@@ -174,125 +243,17 @@ async function loadPreview(sceneId) {
   }
 }
 
-async function loadPreviewMesh(
-  sceneConfig,
-  onProgress,
-) {
-  if (!sceneConfig.previewMeshPath) return;
-
-  // 실제 Multiset map 좌표계 확인용 textured mesh를 불러옵니다.
-  const gltf = await loadGltfWithProgress(
-    sceneConfig.previewMeshPath,
-    onProgress,
-  );
-  const mesh = gltf.scene;
-  mesh.name = `${sceneConfig.label} Mesh`;
-  const wireframeRoot = new THREE.Group();
-  wireframeRoot.name = `${sceneConfig.label} Mesh Wireframe`;
-
-  mesh.traverse((object) => {
-    if (!object.isMesh) return;
-    object.frustumCulled = false;
-    // 위치 확인이 목적이라 원본 텍스처 대신 반투명 단색으로 표시합니다.
-    object.material = new THREE.MeshBasicMaterial(
-      {
-        color: 0x8f8577,
-        transparent: true,
-        opacity: 0.42,
-        side: THREE.DoubleSide,
-        depthWrite: false,
-      },
-    );
-
-    const wireframe = new THREE.LineSegments(
-      new THREE.WireframeGeometry(
-        object.geometry,
-      ),
-      new THREE.LineBasicMaterial({
-        color: 0x2563eb,
-        transparent: true,
-        opacity: 0.18,
-        depthTest: false,
-      }),
-    );
-    object.updateMatrixWorld(true);
-    object.localToWorld(wireframe.position);
-    wireframe.matrix.copy(object.matrixWorld);
-    wireframe.matrixAutoUpdate = false;
-    wireframeRoot.add(wireframe);
-  });
-  mapRoot.add(mesh);
-  mapRoot.add(wireframeRoot);
-  const boxHelper = new THREE.BoxHelper(
-    mesh,
-    0xdc2626,
-  );
-  boxHelper.name = `${sceneConfig.label} Mesh Bounds`;
-  mapRoot.add(boxHelper);
-  frameObject(mapRoot);
-}
-
-function loadGltfWithProgress(path, onProgress) {
-  return new Promise((resolve, reject) => {
-    loader.load(
-      path,
-      resolve,
-      (event) => {
-        if (!event.total) {
-          onProgress?.("");
-          return;
-        }
-        const percent = Math.round(
-          (event.loaded / event.total) * 100,
-        );
-        onProgress?.(`${percent}%`);
-      },
-      reject,
-    );
-  });
-}
-
 function formatError(error) {
   if (!error) return "";
   if (typeof error === "string") return error;
   return error.message || String(error);
 }
 
-function frameObject(object) {
-  // 큰 공간 mesh가 화면 밖에 있지 않도록 카메라를 자동 배치합니다.
-  object.updateMatrixWorld(true);
-  const box = new THREE.Box3().setFromObject(
-    object,
-  );
-  if (box.isEmpty()) return;
-
-  const center = box.getCenter(
-    new THREE.Vector3(),
-  );
-  const size = box.getSize(new THREE.Vector3());
-  const maxSize = Math.max(
-    size.x,
-    size.y,
-    size.z,
-    1,
-  );
-
-  controls.target.copy(center);
-  camera.position.set(
-    center.x + maxSize * 0.55,
-    center.y + maxSize * 0.32,
-    center.z + maxSize * 0.55,
-  );
-  camera.near = 0.01;
-  camera.far = Math.max(100, maxSize * 4);
-  camera.updateProjectionMatrix();
-  controls.update();
-}
-
 function render() {
   const deltaSeconds = clock.getDelta();
   updateSceneAssets(anchors, deltaSeconds);
   controls.update();
+  updateSelectedHelper();
   renderer.render(scene, camera);
 }
 
@@ -329,6 +290,132 @@ function applyPlacementOffsetFromInputs() {
   offsetOutput.textContent = `placementOffset: [${offset.map(formatNumber).join(", ")}]`;
 }
 
+function populateAssetSelect(assets) {
+  assetSelect.replaceChildren();
+  assets.forEach((asset, index) => {
+    const option = document.createElement("option");
+    option.value = index.toString();
+    option.textContent = `${index + 1}. ${asset.name}`;
+    assetSelect.appendChild(option);
+  });
+}
+
+function handleAssetSelectionChange() {
+  selectedAssetIndex = Number(assetSelect.value) || 0;
+  syncSelectedAssetInputs();
+  updateSelectedHelper();
+}
+
+function syncSelectedAssetInputs() {
+  const position =
+    assetPositions[selectedAssetIndex] || [0, 0, 0];
+  assetInputs.x.value = formatNumber(position[0]);
+  assetInputs.y.value = formatNumber(position[1]);
+  assetInputs.z.value = formatNumber(position[2]);
+  assetInputs.rotationY.value = formatNumber(
+    radiansToDegrees(
+      assetRotationOffsets[selectedAssetIndex] || 0,
+    ),
+  );
+}
+
+function applySelectedAssetPositionFromInputs() {
+  if (!assetPositions[selectedAssetIndex]) return;
+  const nextPosition = [
+    readInputNumber(assetInputs.x),
+    readInputNumber(assetInputs.y),
+    readInputNumber(assetInputs.z),
+  ];
+  assetPositions[selectedAssetIndex] = nextPosition;
+  applyAssetPosition(selectedAssetIndex);
+  updatePlacementsOutput();
+  updateSelectedHelper();
+}
+
+function applySelectedAssetRotationFromInput() {
+  if (
+    assetRotationOffsets[selectedAssetIndex] ===
+    undefined
+  ) {
+    return;
+  }
+
+  assetRotationOffsets[selectedAssetIndex] =
+    degreesToRadians(
+      readInputNumber(assetInputs.rotationY),
+    );
+  applyAssetPosition(selectedAssetIndex);
+  updatePlacementsOutput();
+  updateSelectedHelper();
+}
+
+function applyAllAssetPositions() {
+  assetPositions.forEach((_, index) => {
+    applyAssetPosition(index);
+  });
+}
+
+function applyAssetPosition(index) {
+  const anchor = anchors[index];
+  const position = assetPositions[index];
+  if (!anchor || !position) return;
+
+  anchor.object.position.fromArray(position);
+  anchor.object.rotation.set(
+    ...makeLookAtCenterRotation(
+      position,
+      assetRotationOffsets[index] ??
+        anchor.asset.rotationOffset,
+    ),
+  );
+}
+
+function updatePlacementsOutput() {
+  const rows = assetPositions.map(
+    (position) =>
+      `  [${position.map(formatNumber).join(", ")}],`,
+  );
+  placementsOutput.textContent = [
+    "const ASSET_PLACEMENTS = [",
+    ...rows,
+    "];",
+    "",
+    "const ASSET_ROTATION_OFFSETS = [",
+    ...assetRotationOffsets.map(
+      (offset) =>
+        `  ${formatRotationOffset(offset)},`,
+    ),
+    "];",
+  ].join("\n");
+}
+
+function updateSelectedHelper() {
+  const anchor = anchors[selectedAssetIndex];
+  if (!selectedBoxHelper || !anchor) {
+    if (selectedBoxHelper) {
+      selectedBoxHelper.visible = false;
+    }
+    return;
+  }
+
+  selectedBoxHelper.setFromObject(anchor.object);
+  selectedBoxHelper.visible = true;
+}
+
+async function copyPlacementsCode() {
+  const code = placementsOutput.textContent;
+  try {
+    await navigator.clipboard.writeText(code);
+    copyPlacementsButton.textContent = "복사됨";
+    window.setTimeout(() => {
+      copyPlacementsButton.textContent = "복사";
+    }, 1200);
+  } catch {
+    status.textContent =
+      "복사가 막혔습니다. 현재 좌표 코드를 직접 선택해서 복사해주세요.";
+  }
+}
+
 function readInputNumber(input) {
   const value = Number(input.value);
   return Number.isFinite(value) ? value : 0;
@@ -336,4 +423,20 @@ function readInputNumber(input) {
 
 function formatNumber(value) {
   return Number(value.toFixed(2)).toString();
+}
+
+function degreesToRadians(value) {
+  return (value * Math.PI) / 180;
+}
+
+function radiansToDegrees(value) {
+  return (value * 180) / Math.PI;
+}
+
+function formatRotationOffset(value) {
+  const degrees = radiansToDegrees(value || 0);
+  if (Math.abs(degrees) < 0.01) return "0";
+
+  const rounded = Number(degrees.toFixed(2));
+  return `degreesToRadians(${rounded})`;
 }
