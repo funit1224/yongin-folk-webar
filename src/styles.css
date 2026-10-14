@@ -55,7 +55,7 @@ canvas {
   width: min(82vw, 330px);
   margin: 0;
   padding: 15px 20px 16px;
-  border-radius: 16px;
+  border-radius: 28px;
   background: rgba(23, 23, 23, 0.68);
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22);
   transform: translateX(-50%);
@@ -63,14 +63,14 @@ canvas {
 
 .retry-icon-button {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 12px;
+  right: 12px;
   display: none;
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   padding: 0;
   border: 0;
-  border-radius: 10px;
+  border-radius: 100px;
   color: rgba(255, 255, 255, 0.94);
   background: rgba(255, 255, 255, 0.14);
   font-size: 0;
