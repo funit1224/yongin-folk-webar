@@ -4,6 +4,9 @@ export const BUTTON_LABELS = {
   retry: "다시 시도",
 };
 
+const EXPERIENCE_GUIDE =
+  "휴대폰을 움직여\n오늘 체험한 내용들을 살펴 보세요.";
+
 export const STATUS_MESSAGES = {
   missingEnv: {
     title: "환경변수 필요",
@@ -22,9 +25,8 @@ export const STATUS_MESSAGES = {
     };
   },
   scanReady: {
-    title: "주변을 천천히 비춰주세요",
-    detail:
-      "휴대폰을 좌우로 천천히 움직여\n주변을 함께 담아주세요.",
+    title: "AR 콘텐츠 안내",
+    detail: EXPERIENCE_GUIDE,
   },
   sessionStarting: {
     title: "AR 세션 시작 중",
@@ -32,15 +34,12 @@ export const STATUS_MESSAGES = {
   },
   localized: {
     title: "AR 콘텐츠 표시 중",
-    detail: "",
+    detail: EXPERIENCE_GUIDE,
   },
   scanComplete(confidence) {
     return {
       title: "공간 스캔 완료",
-      detail:
-        typeof confidence === "number"
-          ? `위치 인식 성공. 신뢰도 ${(confidence * 100).toFixed(0)}%.`
-          : "위치 인식 성공.",
+      detail: EXPERIENCE_GUIDE,
     };
   },
   startFallback: {
@@ -52,9 +51,8 @@ export const STATUS_MESSAGES = {
     title: "AR 시작 실패",
   },
   retry: {
-    title: "공간 인식이 어려워요",
-    detail:
-      "주변을 천천히 다시 비춘 뒤\n아래 버튼을 눌러 재시도해주세요.",
+    title: "공간 인식 재시도",
+    detail: EXPERIENCE_GUIDE,
   },
   initFailed: {
     title: "초기화 실패",

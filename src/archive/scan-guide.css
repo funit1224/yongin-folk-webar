@@ -1,0 +1,89 @@
+/*
+  이전 공간 스캔 가이드 UI 보관본입니다.
+  현재 WebAR 화면은 상단 로고와 하단 안내문구만 사용합니다.
+*/
+
+.scan-guide {
+  position: fixed;
+  left: 50%;
+  top: 34%;
+  width: min(76vw, 300px);
+  aspect-ratio: 1.55;
+  transform: translate(-50%, -50%);
+}
+
+.scan-grid {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 100%;
+  transform: translateX(-50%);
+  opacity: 0.74;
+}
+
+.scan-phone-wrap {
+  position: absolute;
+  left: 50%;
+  bottom: 32%;
+  width: 21%;
+  transform: translateX(-50%);
+}
+
+.scan-phone {
+  display: block;
+  width: 100%;
+  filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.28));
+}
+
+.scan-line {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  width: 88%;
+  transform: translate(-50%, -50%);
+  animation: scan-line-move 2.2s ease-in-out infinite;
+}
+
+@keyframes scan-line-move {
+  0%,
+  100% {
+    top: 38%;
+    opacity: 0.8;
+  }
+
+  50% {
+    top: 64%;
+    opacity: 1;
+  }
+}
+
+.status-card {
+  position: fixed;
+  left: 50%;
+  top: 61%;
+  width: min(86vw, 340px);
+  min-height: 164px;
+  margin: 0;
+  padding: 18px 17px 17px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(76, 67, 55, 0.82), rgba(51, 45, 38, 0.78));
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(8px);
+  transform: translate(-50%, -50%);
+}
+
+.status-kicker {
+  margin: 0 0 7px;
+  color: #00d7df;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.scan-progress {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 22px;
+}
+
