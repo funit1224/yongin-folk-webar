@@ -2,7 +2,6 @@ import "./styles.css";
 import {
   getMapByScene,
   DEFAULT_SCENE,
-  validateMapConfig,
 } from "./config/maps.js";
 import { STATUS_MESSAGES } from "./config/messages.js";
 import {
@@ -10,15 +9,8 @@ import {
   listScenes,
 } from "./config/scenes.js";
 import {
-  loadSceneAssets,
-  updateSceneAssets,
-} from "./content/glb-content.js";
-import {
-  createMultisetAR,
   isMultisetWebARSupported,
 } from "./core/multiset-ar.js";
-import { addTargetAssetLighting } from "./core/lighting.js";
-import { createScene3D } from "./core/scene3d.js";
 import {
   formatError,
   getDom,
@@ -26,6 +18,10 @@ import {
   setStatus,
 } from "./ui/dom.js";
 import { createARSessionFlow } from "./webar/ar-session-flow.js";
+import {
+  createMultisetRuntime,
+  createSceneRuntime,
+} from "./webar/runtime.js";
 
 const clientId = import.meta.env
   .VITE_MULTISET_CLIENT_ID;
@@ -144,59 +140,41 @@ async function setup(sceneId) {
     preparingMapMessage.detail,
   );
   cleanup();
-  scene3d = createScene3D(document.body);
-  // preview에서 확정한 장면 전체 보정값을 실제 AR에도 동일하게 적용합니다.
-  scene3d.root.position.fromArray(
-    sceneConfig.placementOffset || [0, 0, 0],
-  );
-
   try {
-    validateMapConfig(mapConfig);
-    anchors = await loadSceneAssets(
-      scene3d.root,
-      sceneConfig.assets,
-    );
-    addTargetAssetLighting(scene3d.root, anchors);
+    const sceneRuntime =
+      await createSceneRuntime({
+        container: document.body,
+        sceneConfig,
+      });
+    scene3d = sceneRuntime.scene3d;
+    anchors = sceneRuntime.anchors;
     if (runId !== setupRun) return;
 
-    multisetAR = await createMultisetAR({
+    multisetAR = await createMultisetRuntime({
       clientId,
       clientSecret,
-      mapCode: mapConfig.code,
-      overlayRoot: elements.overlay,
-      renderer: scene3d.renderer,
-      scene: scene3d.scene,
-      camera: scene3d.camera,
-      contentRoot: scene3d.root,
-      onStatus: (state, title, detail) =>
-        setStatus(elements, state, title, detail),
-      onFrame: (deltaSeconds) =>
-        updateSceneAssets(anchors, deltaSeconds),
-      onLocalized: () => {
-        arSessionFlow.handleLocalized();
-      },
-      onLocalizationFailure: (reason) => {
-        arSessionFlow.showRetryStatus(reason);
-      },
-      onSessionEnd: () => {
-        arSessionFlow.resetARSessionState();
-      },
-      onError: (error) => {
-        if (
-          arSessionFlow.isRecoverableLocalizationError(
-            error,
-          )
-        ) {
-          arSessionFlow.showRetryStatus(error);
-          return;
-        }
-
-        setStatus(
-          elements,
-          "error",
-          STATUS_MESSAGES.multisetError.title,
-          formatError(error),
-        );
+      mapConfig,
+      elements,
+      scene3d,
+      anchors,
+      handlers: {
+        onStatus: (state, title, detail) =>
+          setStatus(
+            elements,
+            state,
+            title,
+            detail,
+          ),
+        onLocalized: () => {
+          arSessionFlow.handleLocalized();
+        },
+        onLocalizationFailure: (reason) => {
+          arSessionFlow.showRetryStatus(reason);
+        },
+        onSessionEnd: () => {
+          arSessionFlow.resetARSessionState();
+        },
+        onError: handleMultisetError,
       },
     });
 
@@ -232,6 +210,24 @@ async function setup(sceneId) {
       formatError(error),
     );
   }
+}
+
+function handleMultisetError(error) {
+  if (
+    arSessionFlow.isRecoverableLocalizationError(
+      error,
+    )
+  ) {
+    arSessionFlow.showRetryStatus(error);
+    return;
+  }
+
+  setStatus(
+    elements,
+    "error",
+    STATUS_MESSAGES.multisetError.title,
+    formatError(error),
+  );
 }
 
 function cleanup() {
